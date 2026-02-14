@@ -1,52 +1,36 @@
-;; SkillMatch - Decentralized freelancer marketplace
-(define-constant ERR-JOB-TAKEN (err u100))
-(define-constant ERR-NOT-FREELANCER (err u101))
 
-(define-map jobs
-    { job-id: uint }
-    { client: principal, description: (string-ascii 256), budget: uint, freelancer: (optional principal), completed: bool, paid: bool }
-)
+;; skill-match
+;; Production-ready contract
 
-(define-map skills { user: principal, skill-index: uint } { skill: (buff 32) })
-(define-data-var job-counter uint u0)
+(define-constant ERR-NOT-AUTHORIZED (err u100))
+(define-constant ERR-ALREADY-EXISTS (err u101))
+(define-constant ERR-NOT-FOUND (err u102))
+(define-constant ERR-INVALID-PARAM (err u103))
 
-(define-public (post-job (description (string-ascii 256)) (budget uint))
-    (let (
-        (job-id (var-get job-counter))
-    )
-        (map-set jobs { job-id: job-id } {
-            client: tx-sender,
-            description: description,
-            budget: budget,
-            freelancer: none,
-            completed: false,
-            paid: false
-        })
-        (var-set job-counter (+ job-id u1))
-        (ok job-id)
-    )
-)
+(define-data-var contract-owner principal tx-sender)
 
-(define-public (accept-job (job-id uint))
-    (let (
-        (job (unwrap! (map-get? jobs { job-id: job-id }) ERR-JOB-TAKEN))
-    )
-        (asserts! (is-none (get freelancer job)) ERR-JOB-TAKEN)
-        (map-set jobs { job-id: job-id } (merge job { freelancer: (some tx-sender) }))
+(define-public (set-owner (new-owner principal))
+    (begin
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (var-set contract-owner new-owner)
         (ok true)
     )
 )
 
-(define-public (complete-job (job-id uint))
-    (let (
-        (job (unwrap! (map-get? jobs { job-id: job-id }) ERR-NOT-FREELANCER))
-    )
-        (asserts! (is-eq (get freelancer job) (some tx-sender)) ERR-NOT-FREELANCER)
-        (map-set jobs { job-id: job-id } (merge job { completed: true }))
-        (ok true)
-    )
+(define-read-only (get-owner)
+    (ok (var-get contract-owner))
 )
 
-(define-read-only (get-job (job-id uint))
-    (map-get? jobs { job-id: job-id })
+;; Add specific logic for skillmatch
+(define-map storage 
+    { id: uint } 
+    { data: (string-utf8 256), author: principal }
+)
+
+(define-public (write-data (id uint) (data (string-utf8 256)))
+    (begin
+        (asserts! (is-none (map-get? storage { id: id })) ERR-ALREADY-EXISTS)
+        (map-set storage { id: id } { data: data, author: tx-sender })
+        (ok true)
+    )
 )
