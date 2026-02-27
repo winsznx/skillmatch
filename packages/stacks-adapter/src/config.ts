@@ -1,8 +1,8 @@
 import { StacksMainnet, StacksTestnet } from '@stacks/network';
 
 export const stacksConfig = {
-    appName: 'ChainRegistry',
-    appIcon: 'https://chainregistry.app/icon.png',
+    appName: 'SkillMatch',
+    appIcon: 'https://skillmatch.app/icon.png',
     network: new StacksTestnet(),
     mainnet: new StacksMainnet(),
     testnet: new StacksTestnet()
